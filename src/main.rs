@@ -26,7 +26,10 @@ impl splitData {
         self.path = path.to_string();
     }
 
-    pub fn split_data(self,data:Vec<u8>){
+    pub fn split_data(mut self){
+        
+    }
+    pub fn merge_data(mut self){
         
     }
 }
