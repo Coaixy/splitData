@@ -18,9 +18,9 @@ impl splitData {
         //如果文件夹存在就删除全部内容，不存在则创建
         let dir_path = "data_".to_owned()+path;
         if fs::metadata(&dir_path).is_ok() {
-            fs::remove_dir_all(&dir_path);
+            fs::remove_dir_all(&dir_path).expect("Failed to remove all files");
         }else{
-            fs::create_dir(&dir_path);
+            fs::create_dir(&dir_path).expect("Failed to create dir");
         }
         self.data = contents;
         self.path = path.to_string();
