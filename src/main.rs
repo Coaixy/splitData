@@ -26,8 +26,19 @@ impl splitData {
         self.path = path.to_string();
     }
 
-    pub fn split_data(mut self){
-        
+    pub fn split_data(mut self,count:usize){
+        let length = self.data.len();
+        let every_length = length/count;
+        //平均分配数据
+        for i in 1..count-1{
+            for j in (count-1)*every_length..count*every_length-1{
+
+            }
+        }
+        //剩余的数据
+        for i in (count-1)*every_length..length{
+
+        }
     }
     pub fn merge_data(mut self){
         
