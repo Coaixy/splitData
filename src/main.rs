@@ -1,4 +1,5 @@
 use std::{
+    env,
     fs::{self, File, OpenOptions},
     io::{Read, Write},
     path::Path,
@@ -16,7 +17,9 @@ impl splitData {
             path: path.to_string(),
         }
     }
-
+    pub fn set_path(&mut self, path: &str) {
+        self.path = path.to_string();
+    }
     fn read_data(&mut self) {
         let mut file = File::open(&self.path).expect("Failed to open file");
         let mut contents = Vec::new();
@@ -66,20 +69,38 @@ impl splitData {
         }
         file.write_all(&data).unwrap();
     }
-    pub fn merge_data(&mut self,ext:&str) {
-        let dir_path = "data_".to_owned() + &self.path.replace(".", "-");
+    pub fn merge_data(&mut self, dir_path: &str, ext: &str) {
+        let dir_path = dir_path.to_string();
         let mut file_names: Vec<_> = fs::read_dir(&dir_path)
             .unwrap()
             .map(|entry| entry.unwrap().file_name())
             .collect();
-        file_names.sort();
-        let mut all_data:Vec<u8> = Vec::new();
-        for i in file_names{
-            let path = dir_path.to_string() +"\\"+ &i.to_string_lossy().into_owned();
+        file_names.sort_by(|a, b| {
+            let a_num: i32 = a
+                .to_string_lossy()
+                .to_string()
+                .split('.')
+                .next()
+                .unwrap()
+                .parse()
+                .unwrap();
+            let b_num: i32 = b
+                .to_string_lossy()
+                .to_string()
+                .split('.')
+                .next()
+                .unwrap()
+                .parse()
+                .unwrap();
+            a_num.cmp(&b_num)
+        });
+        let mut all_data: Vec<u8> = Vec::new();
+        for i in file_names {
+            let path = dir_path.to_string() + "\\" + &i.to_string_lossy().into_owned();
             let data = fs::read(path).unwrap();
             all_data.extend(data);
         }
-        let file_path = self.path.to_string() + &ext.to_string();
+        let file_path = dir_path.replace("-", ".").replace("data_", "") + &ext.to_string();
         let mut file = OpenOptions::new()
             .read(true)
             .write(true)
@@ -90,7 +111,47 @@ impl splitData {
     }
 }
 fn main() {
-    let mut sd = splitData::new("1.jpg");
-    sd.split_data(4);
-    sd.merge_data(".sd");
+    let args: Vec<String> = env::args().collect();
+    let mut sd = splitData::new("");
+    let this_dir = env::current_dir().unwrap();
+    //Test
+    if args.len() == 1 {
+        sd.set_path("1.jpg");
+        let dir_path = this_dir.to_string_lossy().to_string()
+            + "\\"
+            + &"data_".to_string()
+            + &"1.jpg".to_string().replace(".", "-");
+        sd.split_data(10);
+        sd.merge_data(&dir_path, "");
+    //Test
+    } else if args.len() <= 2 {
+        panic!("not match args");
+    } else {
+        match args.get(1).unwrap().as_str() {
+            "-s" => {
+                sd.set_path(args.get(2).unwrap());
+                let count = args.get(3).unwrap().parse::<usize>().unwrap();
+                sd.split_data(count);
+            }
+            "-m" => {
+                let file_name = args.get(2).unwrap();
+                sd.set_path(file_name);
+
+                let dir_path = args.get(2).unwrap();
+                let path = Path::new(dir_path);
+                let path = if path.is_absolute() {
+                    dir_path.replace(".", "-").to_string()
+                } else {
+                    this_dir.to_str().unwrap().to_owned() + "\\" + dir_path
+                };
+                let ext = if args.len() == 4 {
+                    args.get(3).unwrap()
+                } else {
+                    ""
+                };
+                sd.merge_data(&dir_path, ext);
+            }
+            _ => {}
+        }
+    }
 }
